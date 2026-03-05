@@ -158,7 +158,15 @@ const firebaseConfig = {
   }
 
   window.logout = async function() {
-    await signOut(auth);
+    const q = query(collection(db, "comments"), where("user", "==", auth.currentUser.uid));
+    const querySnapshot = await getDocs(q);
+
+    const list = document.getElementById("commentsList");
+    list.innerHTML = "";
+
+      const li = document.createElement("li");
+      li.textContent = "";
+      await signOut(auth);
   }
 
   window.saveComment = async function() {
@@ -185,16 +193,47 @@ const firebaseConfig = {
     });
   }
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      document.getElementById("auth").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      loadComments();
+  
+
+
+
+  onAuthStateChanged(auth, async (user) => {
+
+  if (user) {
+
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const role = userDoc.data().role;
+
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+
+    if (role === "admin") {
+      loadAllComments();
     } else {
-      document.getElementById("auth").style.display = "block";
-      document.getElementById("dashboard").style.display = "none";
+      loadComments();
     }
+
+  } else {
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("dashboard").style.display = "none";
+  }
+
+});
+
+async function loadAllComments() {
+
+  const querySnapshot = await getDocs(collection(db, "comments"));
+
+  const list = document.getElementById("commentsList");
+  list.innerHTML = "";
+
+  querySnapshot.forEach((doc) => {
+    const li = document.createElement("li");
+    li.textContent = doc.data().user + " : " + doc.data().text;
+    list.appendChild(li);
   });
+
+}
 </script>
 
 </body>
